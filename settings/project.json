@@ -1,1 +1,5 @@
-{}
+{
+  "migrate-history": [
+    "cloud-function"
+  ]
+}

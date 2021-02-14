@@ -37,7 +37,7 @@ export default class AStar {
      * @param x 地图横坐标大小
      * @param y 地图纵坐标大小
      */
-    constructor(x: number, y: number) {
+    public init(x: number, y: number) {
         this._x = x;
         this._y = y;
     }
@@ -54,7 +54,6 @@ export default class AStar {
     public setStartNode(x: number, y: number) {
         if (!this.checkNode(x, y)) return;
         this.startPint = {x, y};
-        this.run();
     }
     /**
      * 设置起始点
@@ -64,7 +63,6 @@ export default class AStar {
     public setEndNode(x: number, y: number) {
         if (!this.checkNode(x, y)) return;
         this.endPint = {x, y};
-        this.run();
     }
 
     public clean() {
@@ -81,7 +79,6 @@ export default class AStar {
     public setObstacles(x: number, y: number) {
         if (!this.checkNode(x, y)) return;
         this.obstacles[`${x}_${y}`] = true;
-        this.run();
     }
     /**
      * 清除障碍物
@@ -150,7 +147,7 @@ export default class AStar {
     private closeList: AStarNode[] = [];
     private nodePool: {[x_y: string]: AStarNode} = {};
     // 启动寻路
-    private run() {
+    public run() {
         if (!this.startPint || !this.endPint) return;
         console.log('##### 寻路开始 #####');
         console.log('出发点:', this.startPint);
@@ -194,6 +191,16 @@ export default class AStar {
             console.log(`x:${node.x}\ty:${node.y}`);
             node = node.parent;
         }
+    }
+
+    public getPath() {
+        const path: cc.Vec2[] = [];
+        let node = this.endNode;
+        while(node) {
+            path.push(cc.v2(node.x, node.y));
+            node = node.parent;
+        }
+        return path;
     }
 
     // 获取有效的节点，即可前进的子节点
