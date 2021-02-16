@@ -28,46 +28,42 @@ class AStarNode extends Node {
 }
 
 export default class AStar {
-    private _x: number = 0;
-    private _y: number = 0;
-    public get x() {return this._x;}
-    public get y() {return this._y;}
+
+    private mSize: cc.Vec2 = null; // 寻路地图大小
+    private mStart: cc.Vec2 = null; // 寻路起始点坐标
+    private mEnd: cc.Vec2 = null; // 寻路目标点坐标
+    private mObstacles: cc.Vec2[] = null; // 寻路障碍物坐标列表
+
+    private mStartNode: AStarNode = null; // 起始点
+    private mEndNode: AStarNode = null; // 目标点
     /**
      * 设置地图横纵最大值
-     * @param x 地图横坐标大小
-     * @param y 地图纵坐标大小
+     * @param size 地图大小
+     * @param start 寻路起始点
+     * @param end 寻路目标点
+     * @param obstacles 障碍物
      */
-    public init(x: number, y: number) {
-        this._x = x;
-        this._y = y;
-    }
+    public init(size: cc.Vec2, start: cc.Vec2, end: cc.Vec2, obstacles: cc.Vec2[] = []) {
+        this.mSize = size;
+        this.mStart = start;
+        this.mEnd = end;
+        this.mObstacles = obstacles;
+        obstacles.forEach((ele) => {
+            this.setObstacles(ele.x, ele.y);
+        });
 
-    private startPint: {x:number,y:number} = null;
-    private endPint: {x:number,y:number} = null;
-    private startNode: AStarNode = null;
-    private endNode: AStarNode = null;
-    /**
-     * 设置起始点
-     * @param x 起始点横坐标
-     * @param y 起始点纵坐标
-     */
-    public setStartNode(x: number, y: number) {
-        if (!this.checkNode(x, y)) return;
-        this.startPint = {x, y};
-    }
-    /**
-     * 设置起始点
-     * @param x 起始点横坐标
-     * @param y 起始点纵坐标
-     */
-    public setEndNode(x: number, y: number) {
-        if (!this.checkNode(x, y)) return;
-        this.endPint = {x, y};
+        this.openList = [];
+        this.closeList = [];
+        this.nodePool = {};
+
+        this.mStartNode  = this.createNode(this.mStart.x, this.mStart.y);
+        this.mEndNode    = this.createNode(this.mEnd.x, this.mEnd.y);
+        this.add2Open(this.mStartNode);
     }
 
     public clean() {
-        this.startNode = null;
-        this.endNode = null;
+        this.mStartNode = null;
+        this.mEndNode = null;
     }
     
     private obstacles: {[x_y: string]: boolean} = {};
@@ -103,7 +99,7 @@ export default class AStar {
      * @param y 节点纵坐标
      */
     public checkNode(x: number, y: number) {
-        return x >= 0 && y >= 0 && x <= this.x && y <= this.y;
+        return x >= 0 && y >= 0 && x <= this.mSize.x && y <= this.mSize.y;
     }
 
     /**
@@ -148,59 +144,72 @@ export default class AStar {
     private nodePool: {[x_y: string]: AStarNode} = {};
     // 启动寻路
     public run() {
-        if (!this.startPint || !this.endPint) return;
         console.log('##### 寻路开始 #####');
-        console.log('出发点:', this.startPint);
-        console.log('目标点:', this.endPint);
+        console.log('出发点:', this.mStart);
+        console.log('目标点:', this.mEnd);
         console.log('障碍物:', this.obstacles);
-        this.openList = [];
-        this.closeList = [];
-        this.nodePool = {};
-
-        this.startNode  = this.createNode(this.startPint.x, this.startPint.y);
-        this.endNode    = this.createNode(this.endPint.x, this.endPint.y);
-        this.add2Open(this.startNode);
-
-        this.findNext();
-    }
-
-    // 寻找下一个点
-    private findNext() {
+        
         const node = this.openPop();
+        if (node == null) {
+            console.log('无路可走了');
+            return;
+        }
         const nodes = this.getEffectiveNodes(node);
         if (nodes.length === 0) {
-            console.log('无路可走了');
+            console.log('回朔');
+            this.run();
             return;
         }
         this.add2Close(node);
         for (let i = 0; i < nodes.length; i++) {
-            if (nodes[i] === this.endNode) {
+            if (nodes[i] === this.mEndNode) {
                 console.log('##### 寻路完成 #####');
                 this.outPath()
                 return;
             }
             this.add2Open(nodes[i]);
         }
-        this.findNext();
+        this.run();
+    }
+
+    // 寻找下一个点
+    public next() {
+        const node = this.openPop();
+        if (node == null) {
+            console.log('无路可走了');
+            return;
+        }
+        const nodes = this.getEffectiveNodes(node);
+        if (nodes.length === 0) {
+            console.log('回朔');
+            return;
+        }
+        this.add2Close(node);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i] === this.mEndNode) {
+                console.log('##### 寻路完成 #####');
+                this.outPath()
+                return;
+            }
+            this.add2Open(nodes[i]);
+        }
     }
 
     // 输出路径
     private outPath() {
-        let node = this.endNode;
+        let node = this.mEndNode;
         while(node) {
             console.log(`x:${node.x}\ty:${node.y}`);
             node = node.parent;
         }
     }
 
-    public getPath() {
-        const path: cc.Vec2[] = [];
-        let node = this.endNode;
-        while(node) {
-            path.push(cc.v2(node.x, node.y));
-            node = node.parent;
-        }
-        return path;
+    public getOpen() {
+        return this.openList;
+    }
+
+    public getClose() {
+        return this.closeList;
     }
 
     // 获取有效的节点，即可前进的子节点
@@ -226,16 +235,15 @@ export default class AStar {
     private getEffectiveNode(x: number, y: number): AStarNode {
         if (!this.checkNode(x, y)) return null;
         if (this.checkObstacles(x, y)) return null;
-        const key = this.getNodeKey(x, y);
         const node = this.getNode(x, y);
         if (!node || node.state !== NodeState.NONE) return null;
         return node;
     }
 
     private initNode(node: AStarNode, curr: AStarNode) {
-        if (!this.endNode) return;
-        node.H = Math.abs(node.x - this.endNode.x) + Math.abs(node.y - this.endNode.y);
-        node.G = Math.abs(node.x - curr.x) + Math.abs(node.y - curr.y);
+        if (!this.mEndNode) return;
+        node.H = Math.abs(node.x - this.mEndNode.x) + Math.abs(node.y - this.mEndNode.y);
+        node.G = Math.abs(node.x - this.mStartNode.x) + Math.abs(node.y - this.mStartNode.y);
     }
 
     private getNode(x: number, y: number): AStarNode {
