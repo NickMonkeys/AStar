@@ -67,7 +67,7 @@ export default class Open extends cc.Component {
         this.mObstacles.forEach((ele) => {
             this.setCell(ele.x, ele.y, ECellType.OBSTACLES);
         });
-        const path = this.star.getClose();
+        const path = this.star.getPath();
         path.forEach((ele) => {
             this.setCell(ele.x, ele.y, ECellType.PATH);
         });
