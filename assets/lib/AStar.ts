@@ -110,12 +110,24 @@ export default class AStar {
     private cameForm: Map<AStarNode, AStarNode> = new Map();
     // 节点当前代价
     private costSoFar: Map<AStarNode, number> = new Map();
-    // 启动寻路
-    public run() {
+    // 寻路类型(4方向或8方向)
+    private mType: 4|8;
+
+    /**
+     * 开始寻路
+     * @param type 寻路类型，4方向或8方向
+     */
+    public run(type: 4|8 = 4) {
+        this.mType = type;
+
         console.log('##### 寻路开始 #####');
+
+        console.log('地图大小:', this.mSize);
+        console.log('寻路类型:', this.mType + '方向');
         console.log('出发点:', this.mStart);
         console.log('目标点:', this.mEnd);
         console.log('障碍物:', this.obstacles);
+
 
         const start = this.mStartNode;
         const goal = this.mEndNode;
@@ -158,6 +170,20 @@ export default class AStar {
     getNeighbors(node: AStarNode) {
         const neighbors = [];
 
+        if (this.mType === 8) {
+            const upright = this.getNode(node.x + 1, node.y + 1);
+            upright && neighbors.push(upright);
+            
+            const upleft = this.getNode(node.x - 1, node.y + 1);
+            upleft && neighbors.push(upleft);
+    
+            const downleft = this.getNode(node.x - 1, node.y - 1);
+            downleft && neighbors.push(downleft);
+    
+            const downright = this.getNode(node.x + 1, node.y - 1);
+            downright && neighbors.push(downright);
+        }
+
         const up = this.getNode(node.x, node.y + 1);
         up && neighbors.push(up);
         
@@ -174,7 +200,7 @@ export default class AStar {
     }
 
     getCost(node1: AStarNode, node2: AStarNode) {
-        return Math.abs(node1.x - node2.x) + Math.abs(node1.y - node2.y);
+        return cc.Vec2.distance(new cc.Vec2(node1.x, node1.y), new cc.Vec2(node2.x, node2.y));
     }
 
     // 寻找下一个点
