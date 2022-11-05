@@ -49,6 +49,7 @@ export default class AStar {
         this.mSize = size;
         this.mStart = start;
         this.mEnd = end;
+        this.obstacles = {};
         obstacles.forEach((ele) => {
             this.setObstacles(ele.x, ele.y);
         });

@@ -14,6 +14,15 @@ export default class Open extends cc.Component {
     @property(cc.Node)
     eLayout: cc.Node = null;
 
+    @property(cc.EditBox)
+    eX: cc.EditBox = null;
+
+    @property(cc.EditBox)
+    eY: cc.EditBox = null;
+
+    @property(cc.Node)
+    eEditCheck: cc.Node = null;
+
     private star = new AStar();
     private mCells = {};
 
@@ -21,8 +30,10 @@ export default class Open extends cc.Component {
     private mStart: cc.Vec2 = null;
     private mEnd: cc.Vec2 = null;
     private mObstacles: cc.Vec2[] = [];
+    private mType: 4|8 = 4; 
+    private mEditType: 'start'|'end'|'obs' = null;
+    private mLastPath: cc.Vec2[] = [];
     start () {
-        const size = cc.v2(10, 10);
         const start = cc.v2(1, 4);
         const end = cc.v2(9, 6);
         const obstacles = [
@@ -37,42 +48,31 @@ export default class Open extends cc.Component {
             cc.v2(5, 8),
         ];
 
-        this.init(size, start, end, obstacles);
+        this.createMap(cc.v2(15, 15));
+        this.setStart(start);
+        this.setEnd(end);
+        this.setObstacles(obstacles);
+
+        this.runAStar();
+
+        this.refreshUI();
     }
 
-    init(size: cc.Vec2, start: cc.Vec2, end: cc.Vec2, obstacles: cc.Vec2[] = []) {
-        this.mSize = size;
-        this.mStart = start;
-        this.mEnd = end;
-        this.mObstacles = obstacles;
-        
-        this.initData();
-        this.initUI();
-    }
-    
-    initData() {
+    runAStar() {
         this.star.init(this.mSize, this.mStart, this.mEnd, this.mObstacles);
+        this.star.run(this.mType);
     }
     
-    initUI() {
-        
-        this.mCells = {};
-        this.eLayout.removeAllChildren();
-        for (let y = 0; y < this.mSize.y; y++){
-            for (let x = 0; x < this.mSize.x; x++) {
-                this.createCell(x, y);
-            }
-        }
-    
+    refreshUI() {
         this.mObstacles.forEach((ele) => {
-            this.setCell(ele.x, ele.y, ECellType.OBSTACLES);
+            this.setCell(ele, ECellType.OBSTACLES);
         });
-        const path = this.star.getPath();
-        path.forEach((ele) => {
-            this.setCell(ele.x, ele.y, ECellType.PATH);
+        this.mLastPath = this.star.getPath();
+        this.mLastPath.forEach((ele) => {
+            this.setCell(ele, ECellType.PATH);
         });
-        this.setCell(this.mStart.x, this.mStart.y, ECellType.START);
-        this.setCell(this.mEnd.x, this.mEnd.y, ECellType.END);
+        this.setCell(this.mStart, ECellType.START);
+        this.setCell(this.mEnd, ECellType.END);
     
         this.eLayout.width = 2 + (50 + 2) * this.mSize.x;
         if (this.mSize.x > 10) {
@@ -82,28 +82,157 @@ export default class Open extends cc.Component {
         }
     }
 
+    createMap(size: cc.Vec2) {
+        this.mSize = size;
+        this.mCells = {};
+        this.mStart = null;
+        this.mEnd = null;
+        this.mObstacles = [];
+
+        this.eLayout.destroyAllChildren();
+        for (let y = 0; y < this.mSize.y; y++){
+            for (let x = 0; x < this.mSize.x; x++) {
+                this.createCell(x, y);
+            }
+        }
+    }
+
     // 创建cell
     createCell(x: number, y: number) {
         const node = cc.instantiate(this.eCell);
         node.parent = this.eLayout;
         this.mCells[`${x}_${y}`] = node.getComponent(MapCell);
-        this.mCells[`${x}_${y}`].init(x, y);
+        this.mCells[`${x}_${y}`].init(x, y, this.onCellClick.bind(this));
     }
 
     // 设置cell类型
-    setCell(x: number, y: number, type: ECellType) {
-        this.mCells[`${x}_${y}`].setType(type);
+    setCell(pos: cc.Vec2, type: ECellType) {
+        this.mCells[`${pos.x}_${pos.y}`].setType(type);
+    }
+
+    // 设置开始节点
+    setStart(pos: cc.Vec2) {
+        if (this.mStart) {
+            this.setCell(this.mStart, ECellType.NOMAL);
+        }
+        this.setCell(pos, ECellType.START);
+        this.mStart = pos;
+    }
+
+    // 设置目标节点
+    setEnd(pos: cc.Vec2) {
+        if (this.mEnd) {
+            this.setCell(this.mEnd, ECellType.NOMAL);
+        }
+        this.setCell(pos, ECellType.END);
+        this.mEnd = pos;
+    }
+
+    // 设置障碍
+    setObstacle(pos: cc.Vec2) {
+        if (pos.x === this.mStart.x && pos.y === this.mStart.y) {
+            return;
+        }
+        if (pos.x === this.mEnd.x && pos.y === this.mEnd.y) {
+            return;
+        }
+        let idx = -1;
+        for (let i = 0; i < this.mObstacles.length; i++) {
+            const ele = this.mObstacles[i];
+            if (pos.x === ele.x && pos.y === ele.y) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx >= 0) {
+            this.setCell(pos, ECellType.NOMAL);
+            this.mObstacles.splice(idx, 1);
+        } else {
+            this.setCell(pos, ECellType.OBSTACLES);
+            this.mObstacles.push(pos);
+        }
+    }
+
+    setPath(pos: cc.Vec2) {
+        this.setCell(pos, ECellType.PATH);
+    }
+
+    clearPath() {
+        this.mLastPath.forEach((ele, i) => {
+            if (i ===0 || i === this.mLastPath.length - 1) {
+                return;
+            }
+            this.setCell(ele, ECellType.NOMAL);
+        })
+        this.mLastPath.length = 0;
+    }
+
+    // 批量添加障碍物
+    setObstacles(posArr: cc.Vec2[]) {
+        posArr.forEach((ele) => {
+            this.setObstacle(ele);
+        });
     }
 
     // 点击进行一次单步寻路
     onClickNext() {
         this.star.next();
-        this.initUI();
+        this.refreshUI();
+    }
+
+    // 选择寻路类型
+    onClickType(toggle: cc.Toggle, tag: string) {
+        this.mType = Number(tag) as any;
     }
 
     // 点击进行执行寻路
     onClickRun() {
-        this.star.run();
-        this.initUI();
+        this.clearPath();
+        this.runAStar();
+        this.refreshUI();
+    }
+
+    // 地图尺寸编辑完毕
+    onSizeEditEnd() {
+        const x = Number(this.eX.string);
+        const y = Number(this.eY.string);
+        this.createMap(cc.v2(x, y));
+    }
+
+    onCellEdit(event: cc.Event.EventTouch, tag: string) {
+        if (this.mEditType === tag) {
+            this.mEditType = null;
+        } else {
+            this.mEditType = tag as any;
+        }
+        if (this.mEditType) {
+            this.eEditCheck.position = event.target.position;
+            this.eEditCheck.active = true;
+            let color = null;
+            if (this.mEditType === 'start') {
+                color = cc.color(125, 125, 226);
+            } else if (this.mEditType === 'end') {
+                color = cc.color(226, 125, 125);
+            } else if (this.mEditType === 'obs') {
+                color = cc.color(125, 125, 125);
+            }
+            this.eEditCheck.children[0].color = color;
+        } else {
+            this.eEditCheck.active = false;
+        }
+    }
+
+    onCellClick(pos: cc.Vec2) {
+        if (this.mEditType) {
+            this.clearPath();
+        }
+        
+        if (this.mEditType === 'start') {
+            this.setStart(pos);
+        } else if (this.mEditType === 'end') {
+            this.setEnd(pos);
+        } else if (this.mEditType === 'obs') {
+            this.setObstacle(pos);
+        }
     }
 }

@@ -26,7 +26,18 @@ export default class MapCell extends cc.Component {
         this.setType(type);
     }
 
-    init(x: number, y: number) {
+    private mOnClick: (pos: cc.Vec2) => void = null;
+    private mX: number = null;
+    private mY: number = null;
+
+    protected onLoad(): void {
+        this.node.on(cc.Node.EventType.TOUCH_END, this.onTouchEnd, this)
+    }
+
+    init(x: number, y: number, onClick: (pos: cc.Vec2) => void) {
+        this.mX = x;
+        this.mY = y;
+        this.mOnClick = onClick;
         this.eName.string = `${x}_${y}`;
     }
     
@@ -49,8 +60,16 @@ export default class MapCell extends cc.Component {
                 color = cc.color(125, 125, 125);
                 break;
             }
+            case ECellType.NOMAL: {
+                color = cc.color(255, 255, 255);
+                break;
+            }
         }
         this.node.color = color;
 
+    }
+
+    onTouchEnd() {
+        this.mOnClick && this.mOnClick(cc.v2(this.mX, this.mY));
     }
 }
