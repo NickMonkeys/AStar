@@ -2470,8 +2470,8 @@
     ],
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
-    "_string": "10",
-    "_N$string": "10",
+    "_string": "12",
+    "_N$string": "12",
     "_fontSize": 20,
     "_lineHeight": 25,
     "_enableWrapText": false,
@@ -2648,7 +2648,7 @@
       "__id__": 50
     },
     "_enabled": true,
-    "_string": "10",
+    "_string": "12",
     "returnType": 0,
     "maxLength": 8,
     "_tabIndex": 0,
@@ -2681,7 +2681,7 @@
     },
     "component": "",
     "_componentId": "61db50ZkhFLVJodPLIA60ix",
-    "handler": "onEditEnd",
+    "handler": "onSizeEditEnd",
     "customEventData": ""
   },
   {
@@ -2960,8 +2960,8 @@
     ],
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
-    "_string": "10",
-    "_N$string": "10",
+    "_string": "12",
+    "_N$string": "12",
     "_fontSize": 20,
     "_lineHeight": 25,
     "_enableWrapText": false,
@@ -3138,7 +3138,7 @@
       "__id__": 62
     },
     "_enabled": true,
-    "_string": "10",
+    "_string": "12",
     "returnType": 0,
     "maxLength": 8,
     "_tabIndex": 0,
@@ -3171,7 +3171,7 @@
     },
     "component": "",
     "_componentId": "61db50ZkhFLVJodPLIA60ix",
-    "handler": "onEditEnd",
+    "handler": "onSizeEditEnd",
     "customEventData": ""
   },
   {

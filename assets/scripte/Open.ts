@@ -48,7 +48,7 @@ export default class Open extends cc.Component {
             cc.v2(5, 8),
         ];
 
-        this.createMap(cc.v2(15, 15));
+        this.createMap();
         this.setStart(start);
         this.setEnd(end);
         this.setObstacles(obstacles);
@@ -82,8 +82,11 @@ export default class Open extends cc.Component {
         }
     }
 
-    createMap(size: cc.Vec2) {
-        this.mSize = size;
+    createMap() {
+        const x = Number(this.eX.string);
+        const y = Number(this.eY.string);
+
+        this.mSize = cc.v2(x, y);
         this.mCells = {};
         this.mStart = null;
         this.mEnd = null;
@@ -194,9 +197,7 @@ export default class Open extends cc.Component {
 
     // 地图尺寸编辑完毕
     onSizeEditEnd() {
-        const x = Number(this.eX.string);
-        const y = Number(this.eY.string);
-        this.createMap(cc.v2(x, y));
+        this.createMap();
     }
 
     onCellEdit(event: cc.Event.EventTouch, tag: string) {
